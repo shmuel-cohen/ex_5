@@ -1,0 +1,65 @@
+giladhare
+shmuel
+
+
+===========================
+=          UML            =
+===========================
+There are two differences between the original UML and the final one. First, at the beginning we plan to
+create a SunAndHalo object to maintain their co-movement. During the implementation we figure out that a
+smart use of callbacks make this class redundant, and the co-movement can be achieved by callbacks.
+The second different is relate to the objects removing during the game. At first we thought that any object
+will kill itself when its getting to far from the avatar by getting the avatar object itself and query its
+location during updates. In our final design we have a static method in GameObjectKiller that does that. The
+details of the considerations of this decision are presented in the Design decisions and Dilemmas part.
+
+
+=====================================
+=          Endless world            =
+=====================================
+We achieved the endless world effect by recurrent creation and deletion of the world. The pepseGameManager
+responsible to call the Terrain to create additional terrain of the game when the avatar is getting close
+to one of the current sides of the screen. The deletion of the world is done by the GameObjectKiller class
+which is detailed in the Design decisions and Dilemmas part. The main thing is that it's delete the part of
+the world that getting far from the avatar.
+In addition, in order to improve the running time we split the ground blocks into two different layers. The
+first includes the very surface part of the ground, and the second includes the rest deeper ground blocks.
+Only the surface layer is able to collide with the avatar and leaves, which reduce the effective runtime of
+the simulation, and able us to create one and half screens of world, rather than one.
+The reproducibility of the world is preserved by fixing a seed per game. The Terrain which responsible for
+the trees and ground creation use this seed in their create functions, which guarantee the reproducibility
+per game (but not across games - due to the random seed)
+
+
+============================================
+=          Trees Implementation            =
+============================================
+In the trees package, we have the Tree class that responsible for creating all the trees. Its receives
+as a Callback the function of the height of the ground at point X (located originally at terrain). In
+addition it contains a creation function that randomly create trees according to seed that Tree gets in
+the constructor (the same game-global seed that we found in Terrain also and guarantees the reproducibility
+of the game as mentioned earlier). In the chosen locations, Tree calls SingleTree to crate a specific tree.
+
+The SingleTree class "randomly" determine the tree height according to its x-axis location. The number of
+leaves at the tree determined by its height, and are created using the Leaf constructor (which extends
+Block). After creating the leaves, SingleTree is responsible for adding them to the game. The leaves
+wind-transition, dropping, and their randomly re-borning is handled in the leaf class.
+
+Finally, single tree responsible for sending the trunk and leaves blocks the function that responsible to
+kill them (and detailed in the next part).
+
+
+=====================================================
+=          Design decisions and Dilemmas            =
+=====================================================
+Blocks removing during the game:
+We created a class called GameObjectKiller to handle the removing of game objects during the simulation,
+when the avatar is getting enough far from them.
+We consider a different implementation of pass the avatar itself to the created blocks, and decide when to
+remove a block according to the avatar location. We chose to create this class from two reasons. The first
+is to keep the encapsulation principle. The passing of the avatar object to all the blocks making an
+unnecessary dependency between the classes. In addition, the creation of this class that responsible
+to the object removing enable us to "Code to an interface rather than implementation" in the block classes,
+by "outsource" the removing out of the block classes themselves to a different class.
+In addition, we consider to make the GameObjectKiller a regular gameObject that iterate on the gameObject
+collection in its update function. This option denied due to long run time.
